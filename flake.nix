@@ -25,8 +25,7 @@
       # Schemas tell Nix about the structure of your flake's outputs
       inherit (flake-schemas) schemas;
 
-      formatter = forEachSupportedSystem ({ pkgs }: pkgs.nixpkgs-fmt);
-
+      # Docker image outputs
       dockerImages = forEachSupportedSystem ({ pkgs }: {
         server = pkgs.dockerTools.buildLayeredImage {
           name = "static-web-server";
@@ -37,12 +36,7 @@
         };
       });
 
-      # Development environments
-      devShells = forEachSupportedSystem ({ pkgs }: {
-        default = pkgs.mkShell {
-          # Pinned packages available in the environment
-          packages = with pkgs; [ ];
-        };
-      });
+      # The formatter that's invoked when you run `nix fmt`
+      formatter = forEachSupportedSystem ({ pkgs }: pkgs.nixpkgs-fmt);
     };
 }
