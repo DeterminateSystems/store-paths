@@ -7,24 +7,20 @@
   inputs = {
     nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/*";
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/*";
-    flake-schemas.url = "https://flakehub.com/f/DeterminateSystems/flake-schemas/*";
   };
 
   # Flake outputs that other flakes can use
-  outputs = { self, flake-compat, flake-schemas, nixpkgs }:
+  outputs = inputs:
     let
       # Helpers for producing system-specific outputs
       supportedSystems = [ "x86_64-linux" "aarch64-darwin" "x86_64-darwin" "aarch64-linux" ];
-      forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
-        pkgs = import nixpkgs { inherit system; };
+      forEachSupportedSystem = f: inputs.nixpkgs.lib.genAttrs supportedSystems (system: f {
+        pkgs = import inputs.nixpkgs { inherit system; };
       });
 
-      linuxPkgs = nixpkgs.legacyPackages.x86_64-linux;
+      linuxPkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
     in
     {
-      # Schemas tell Nix about the structure of your flake's outputs
-      inherit (flake-schemas) schemas;
-
       # Docker image outputs
       dockerImages = forEachSupportedSystem ({ pkgs }: {
         server = pkgs.dockerTools.buildLayeredImage {
