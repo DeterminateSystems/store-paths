@@ -6,6 +6,16 @@ on:
       - main
 
 jobs:
+  build-and-cache:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - name: Build and cache NixOS configuration
+        run: |
+          nix build .#nixosConfigurations.baseline.config.system.build.toplevel
+
   flakehub-publish:
     runs-on: ubuntu-22.04
     permissions:
