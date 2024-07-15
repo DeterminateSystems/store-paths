@@ -36,6 +36,7 @@
         };
       });
 
+      # NixOS configurations
       nixosConfigurations.baseline = inputs.nixpkgs.lib.nixosSystem {
         system = "x86_64-linux";
         modules = [
@@ -44,6 +45,8 @@
               inputs.nix.nixosModules.default
             ];
           })
+
+          ./nixos/baseline.nix
         ];
       };
 
