@@ -12,6 +12,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
       - uses: DeterminateSystems/magic-nix-cache-action@main
+        with:
+          flakehub: true
       - name: Build and cache NixOS configuration
         run: |
           nix build .#nixosConfigurations.baseline.config.system.build.toplevel
