@@ -15,7 +15,7 @@
   networking.useDHCP = false;
   networking.interfaces.eth0.useDHCP = true;
 
-  services.openssh.enable = true;
+  services.openssh.enable = false;
 
   users.users.justme = {
     isNormalUser = true;
