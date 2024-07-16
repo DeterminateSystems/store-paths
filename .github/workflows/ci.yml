@@ -14,6 +14,7 @@ jobs:
       - uses: DeterminateSystems/magic-nix-cache-action@main
         with:
           use-flakehub: true
+          use-gha-cache: false
       - name: Build and cache NixOS configuration
         run: |
           nix build .#nixosConfigurations.baseline.config.system.build.toplevel
