@@ -36,7 +36,7 @@ jobs:
           nix build ".#dockerImages.${{ matrix.systems.nix-system }}.server"
           nix build "#nixosConfigurations.baseline.config.system.build.toplevel"
       - name: Build dev shells, packages, and Docker images for ${{ matrix.systems.nix-system }}
-        run:
+        run: |
           nix build ".#devShells.${{ matrix.systems.nix-system }}.default"
           nix build ".#packages.${{ matrix.systems.nix-system }}.server"
 
