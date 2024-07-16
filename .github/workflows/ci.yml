@@ -27,10 +27,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: DeterminateSystems/nix-installer-action@main
-      - uses: "DeterminateSystems/flakehub-push@main"
+      - uses: DeterminateSystems/flakehub-push@main
         with:
           name: DeterminateSystems/store-paths
           rolling: true
           visibility: public
           include-output-paths: true
-          source-pr: "151"
