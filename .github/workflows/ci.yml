@@ -24,9 +24,9 @@ jobs:
           "x86_64-linux": "UbuntuLatest32Cores128G"
         }
 
-
   flakehub-publish:
     runs-on: ubuntu-22.04
+    needs: [build-and-cache]
     permissions:
       id-token: write
       contents: read
