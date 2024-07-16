@@ -5,19 +5,25 @@ on:
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-and-cache:
-    runs-on: ubuntu-22.04
+    uses: DeterminateSystems/ci/.github/workflows/workflow.yml@main
     permissions:
       id-token: write
       contents: read
-    steps:
-      - uses: actions/checkout@v4
-      - uses: DeterminateSystems/nix-installer-action@main
-      - uses: DeterminateSystems/magic-nix-cache-action@main
-      - name: Build and cache NixOS configuration
-        run: |
-          nix build .#nixosConfigurations.baseline.config.system.build.toplevel
+    with:
+      runner-map: |
+        {
+          "aarch64-darwin": "macos-latest-xlarge",
+          "aarch64-linux": "UbuntuLatest32Cores128GArm",
+          "x86_64-darwin": "macos-latest-xlarge",
+          "x86_64-linux": "UbuntuLatest32Cores128G"
+        }
+
 
   flakehub-publish:
     runs-on: ubuntu-22.04

@@ -11,6 +11,7 @@
       inputs.nixpkgs.follows = "nixpkgs";
     };
     flake-compat.url = "https://flakehub.com/f/edolstra/flake-compat/*";
+    fenix.url = "https://flakehub.com/f/nix-community/fenix/0.1.*";
   };
 
   # Flake outputs that other flakes can use
@@ -19,22 +20,81 @@
       # Helpers for producing system-specific outputs
       supportedSystems = [ "x86_64-linux" "aarch64-darwin" "x86_64-darwin" "aarch64-linux" ];
       forEachSupportedSystem = f: inputs.nixpkgs.lib.genAttrs supportedSystems (system: f {
-        pkgs = import inputs.nixpkgs { inherit system; };
+        pkgs = import inputs.nixpkgs {
+          inherit system;
+          overlays = [ inputs.self.overlays.default ];
+        };
       });
 
       linuxPkgs = inputs.nixpkgs.legacyPackages.x86_64-linux;
     in
     {
-      # Docker image outputs
-      dockerImages = forEachSupportedSystem ({ pkgs }: {
-        server = pkgs.dockerTools.buildLayeredImage {
-          name = "static-web-server";
-          contents = with linuxPkgs; [ cacert ];
-          config = {
-            Entrypoint = [ "${linuxPkgs.static-web-server}/bin/static-web-server" ];
-          };
+      # Nixpkgs overlays
+      overlays.default = final: prev: rec {
+        system = final.stdenv.hostPlatform.system;
+
+        rustToolchain = with inputs.fenix.packages.${system};
+          combine ([
+            stable.clippy
+            stable.rustc
+            stable.cargo
+            stable.rustfmt
+            stable.rust-src
+          ] ++ inputs.nixpkgs.lib.optionals (system == "x86_64-linux") [
+            targets.x86_64-unknown-linux-musl.stable.rust-std
+          ] ++ inputs.nixpkgs.lib.optionals (system == "aarch64-linux") [
+            targets.aarch64-unknown-linux-musl.stable.rust-std
+          ]);
+      };
+
+      # Development environments
+      devShells = forEachSupportedSystem ({ pkgs }: {
+        default = pkgs.mkShell {
+          packages = with pkgs; [
+            rustToolchain
+            cargo-edit
+            bacon
+            iconv
+          ];
         };
       });
+
+      # Packages
+      packages = forEachSupportedSystem ({ pkgs }:
+        let
+          rustPlatform = pkgs.makeRustPlatform {
+            cargo = pkgs.rustToolchain;
+            rustc = pkgs.rustToolchain;
+          };
+        in
+        rec {
+          default = server;
+
+          server = rustPlatform.buildRustPackage {
+            name = "web-server";
+            src = ./server;
+            cargoHash = "sha256-UYIOfURYKYeJiOSJ77YAecQfe+t3GrZbaVah5+jfYEY=";
+
+            buildInputs = with pkgs; [ iconv ];
+          };
+        });
+
+      # Docker image outputs
+      dockerImages = forEachSupportedSystem ({ pkgs }:
+        let
+          system = "x86_64-linux";
+          linuxPkgs = inputs.nixpkgs.legacyPackages.${system};
+          serverPkg = inputs.self.packages.${system}.server;
+        in
+        {
+          server = pkgs.dockerTools.buildLayeredImage {
+            name = "web-server";
+            contents = with linuxPkgs; [ cacert ];
+            config = {
+              Entrypoint = [ "${serverPkg}/bin/server" ];
+            };
+          };
+        });
 
       # NixOS configurations
       nixosConfigurations.baseline = inputs.nixpkgs.lib.nixosSystem {
