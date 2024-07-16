@@ -11,18 +11,34 @@ concurrency:
 
 jobs:
   build-and-cache:
-    uses: DeterminateSystems/ci/.github/workflows/workflow.yml@main
+    runs-on: ${{ matrix.systems.runner }}
     permissions:
       id-token: write
       contents: read
-    with:
-      runner-map: |
-        {
-          "aarch64-darwin": "macos-latest-xlarge",
-          "aarch64-linux": "UbuntuLatest32Cores128GArm",
-          "x86_64-darwin": "macos-latest-xlarge",
-          "x86_64-linux": "UbuntuLatest32Cores128G"
-        }
+    strategy:
+      matrix:
+        systems:
+          - nix-system: aarch64-darwin
+            runner: macos-latest-xlarge
+          - nix-system: x86_64-darwin
+            runner: macos-12
+          - nix-system: aarch64-linux
+            runner: namespace-profile-default-arm64
+          - nix-system: x86_64-linux
+            runner: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: DeterminateSystems/nix-installer-action@main
+      - uses: DeterminateSystems/magic-nix-cache-action@main
+      - if: ${{ matrix.systems.nix-system == 'x86_64-linux' }}
+        name: Build NixOS configuration on ${{ matrix.systems.nix-system }}
+        run: |
+          nix build .#nixosConfigurations.baseline
+      - name: Build dev shells, packages, and Docker images for ${{ matrix.systems.nix-system }}
+        run:
+          nix build ".#devShells.${{ matrix.systems.nix-system }}.default"
+          nix build ".#packages.${{ matrix.systems.nix-system }}.server"
+          nix build ".#dockerImages.${{ matrix.systems.nix-system }}.server"
 
   flakehub-publish:
     runs-on: ubuntu-22.04
